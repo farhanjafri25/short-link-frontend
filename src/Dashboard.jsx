@@ -7,12 +7,13 @@ function Dashboard() {
   const [link, setLink] = useState("");
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [linkAnalytics, setLinkAnalytics] = useState([]);
+  const [nextPage, setNextPage] = useState(null);
 
   const handleLinkChange = (event) => {
     setLink(event.target.value);
   };
 
-  const handleAddLink = useCallback(async () => {
+  const handleAddLink = async () => {
     const accessToken = localStorage.getItem("access_token");
     const response = await axios.post(
       `http://localhost:3002/link/add-link`,
@@ -31,7 +32,7 @@ function Dashboard() {
     } else {
       alert(`${response.data.message}`);
     }
-  }, [link]);
+};
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
@@ -39,6 +40,7 @@ function Dashboard() {
   };
 
   const handleGetLinkAnalytics = async () => {
+    console.log(`nextPage`, nextPage);
     const accessToken = localStorage.getItem("access_token");
     const response = await axios.get(`http://localhost:3002/link/analytics`, {
       headers: {
@@ -52,7 +54,25 @@ function Dashboard() {
     } else {
       setLinkAnalytics(data);
       setShowAnalytics(true);
+      if(response.data.data.nextPage) {
+        setNextPage(response.data.data.nextPage)
+      }
     }
+  };
+
+  const handleGetLinkAnalyticsLoadMore = async () => {
+    console.log(`nextPage`, nextPage);
+    const accessToken = localStorage.getItem("access_token");
+    const response = await axios.get(`http://localhost:3002/link/analytics?page=${nextPage}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    console.log(`link analytics response`, response.data.data.docs);
+    const dataList = response.data.data.docs
+      setLinkAnalytics([...linkAnalytics, ...dataList]);
+      setShowAnalytics(true);
+      setNextPage(response.data.data.nextPage) 
   };
 
   const handleCloseAnalytics = () => {
@@ -113,6 +133,9 @@ function Dashboard() {
                   </li>
                 ))}
               </ul>
+              {nextPage ? (
+                <button onClick={handleGetLinkAnalyticsLoadMore}>Load More</button>
+              ) : ''}
             </div>
           </div>
         )}
